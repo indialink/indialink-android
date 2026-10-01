@@ -1,20 +1,15 @@
 name: Build INDIALINK APK
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ main ]
-
-permissions:
-  contents: read
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,32 +18,19 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-
-      - name: Locate Android sdkmanager
-        id: sdk
-        shell: bash
-        run: |
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
-          if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager not found under $ANDROID_HOME/cmdline-tools"
-            exit 1
-          fi
-          echo "path=$SDKMANAGER" >> "$GITHUB_OUTPUT"
-          echo "Using $SDKMANAGER"
-
-      - name: Accept Android SDK licenses
-        shell: bash
-        run: yes | "${{ steps.sdk.outputs.path }}" --licenses > /dev/null || true
+          java-version: "17"
 
       - name: Install Android SDK 35
         shell: bash
-        run: "${{ steps.sdk.outputs.path }}" "platforms;android-35" "build-tools;35.0.0"
+        run: |
+          SDKMANAGER="/usr/local/lib/android/sdk/cmdline-tools/16.0/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: "8.9"
 
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
